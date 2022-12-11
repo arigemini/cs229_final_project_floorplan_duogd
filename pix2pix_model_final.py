@@ -7,7 +7,7 @@ from IPython import display
 
 import tensorflow as tf
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2 as cv
@@ -126,13 +126,10 @@ def get_sample():
 def show_sample():
     inp, intm, re = get_sample()
     plt.figure()
-    plt.title('(a) boundary')
     plt.imshow(inp / 255.0)
     plt.figure()
-    plt.title('(b) walls')
     plt.imshow(intm / 255.0)
     plt.figure()
-    plt.title('(c) rooms')
     plt.imshow(re / 255.0)
 
 
@@ -221,8 +218,8 @@ second_generator = Generator()
     We have included a room_ratio_loss to tailor the model to our application. We also set LAMBDA=50 as that improved metrics.
 """
 
-LAMBDA = 50
-
+LAMBDA = 100
+BETA = 1000
 
 def room_ratio_loss(target_image, gen_image):
     # plt.figure(figsize=(15, 15))
@@ -249,7 +246,7 @@ def generator_loss(disc_generated_output, gen_output, target, second_gen_bool):
     if second_gen_bool:
         ratio_loss = tf.reduce_mean(room_ratio_loss(target, gen_output))
 
-        total_gen_loss = gan_loss + (LAMBDA * l1_loss) + (LAMBDA * ratio_loss)
+        total_gen_loss = gan_loss + (LAMBDA * l1_loss) + (BETA * ratio_loss)
 
         return total_gen_loss, gan_loss, l1_loss, ratio_loss
 
@@ -290,7 +287,7 @@ first_discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 second_generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 second_discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 
-training_outputdir = 'dual_gendisc_training_output_for_report'
+training_outputdir = 'dual_gendisc_training_output'
 
 checkpoint_dir = f'./{training_outputdir}/training_checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
@@ -432,7 +429,7 @@ def fit(train_ds, epochs, test_ds, resumecheck=0):  # changed a bit, since the d
             cur_ratioloss = train_step(input_image, intermediate_target, target, epoch + resumecheck, cur_ratioloss)
 
         # saving (checkpoint) the model every 20 epochs
-        if (epoch + resumecheck + 1) % 1 == 0:
+        if (epoch + resumecheck + 1) % 20 == 0:
             checkpoint.save(file_prefix=checkpoint_prefix)
 
         print('Time taken for epoch {} is {} sec\n'.format(epoch + resumecheck + 1, time.time() - start))
